@@ -1,38 +1,89 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { getContract, getCurrentAccount } from '../web3.js';
 
-function ViewCollections({ contract }) {
-    const [collections, setCollections] = useState([]);
+export default function ViewCollection() {
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchCollections = async () => {
-            const creatorCollections = await contract.methods.creatorCollections().call();
-            setCollections(creatorCollections);
-        };
-        fetchCollections();
-    }, [contract]);
+  useEffect(() => {
+    loadCollections();
+  }, []);
 
+  const loadCollections = async () => {
+    try {
+      const contract = await getContract();
+      const account = await getCurrentAccount();
+      const userCollections = await contract.methods.getCreatorCollections(account).call();
+      
+      // Process collections to handle BigInt and ensure proper data structure
+      const processedCollections = userCollections.map(collection => ({
+        ...collection,
+        // Convert BigInt to string if it exists
+        collectionId: collection.collectionId ? collection.collectionId.toString() : undefined,
+        // Ensure other fields are properly mapped
+        name: collection.name || 'Unnamed Collection',
+        creator: collection.creator || account
+      }));
+      
+      setCollections(processedCollections);
+    } catch (err) {
+      console.error("Error loading collections:", err);
+      setError('Failed to load collections: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-6 my-6">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                View Collections
-            </h2>
-            <ul className="divide-y divide-gray-300">
-                {collections.map((collection, index) => (
-                    <li
-                        key={index}
-                        className="py-2 flex justify-between items-center"
-                    >
-                        <span className="text-gray-700 font-medium">
-                            {collection.name} (ID: {collection.collectionId})
-                        </span>
-                        <span className="text-gray-500">
-                            Creator: {collection.creator}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        </div>
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center text-gray-600">Loading collections...</div>
+      </div>
     );
-}
+  }
 
-export default ViewCollections;
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Your Collections</h2>
+      
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {collections.map((collection, index) => {
+          
+          return (
+            <div
+              key={collection.collectionId || index}
+              className="bg-white p-6 rounded-lg shadow-md"
+            >
+              <h3 className="text-xl font-semibold mb-2">
+                {collection.name}
+              </h3>
+              <p className="text-gray-600 mb-4 font-semibold">
+                Collection ID: {collection.collectionId}
+              </p>
+              <div className="text-sm text-gray-500 font-semibold">
+                Creator: {collection.creator ? 
+                  `${collection.creator.slice(0, 6)}...${collection.creator.slice(-4)}` :
+                  'Unknown Creator'}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {collections.length === 0 && !error && (
+        <div className="text-center text-gray-600">
+          No collections found. Create your first collection!
+        </div>
+      )}
+
+      
+    </div>
+  );
+}

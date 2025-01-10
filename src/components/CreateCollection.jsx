@@ -1,39 +1,73 @@
-import React, { useState } from "react";
+import { useState } from 'react';
+import { getContract, getCurrentAccount } from '../web3.js';
 
-function CreateCollection({ contract, account }) {
-    const [collectionName, setCollectionName] = useState("");
+export default function CreateCollection() {
+  const [collectionName, setCollectionName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-    const createCollection = async () => {
-        try {
-            const result = await contract.methods
-                .createCollection(collectionName)
-                .send({ from: account });
-            alert(`Collection Created! ID: ${result.events.CollectionCreated.returnValues.collectionId}`);
-        } catch (error) {
-            console.error(error);
-        }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
-    return (
-        <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 my-6">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                Create Collection
-            </h2>
-            <input
-                type="text"
-                placeholder="Enter Collection Name"
-                value={collectionName}
-                onChange={(e) => setCollectionName(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-                onClick={createCollection}
-                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200"
-            >
-                Create Collection
-            </button>
+    try {
+      const contract = await getContract();
+      const account = await getCurrentAccount();
+      
+      const tx = await contract.methods.createCollection(collectionName)
+        .send({ from: account });
+      
+      setSuccess(`Collection created! Transaction: ${tx.transactionHash}`);
+      setCollectionName('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Create Collection</h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Collection Name
+          </label>
+          <input
+            type="text"
+            value={collectionName}
+            onChange={(e) => setCollectionName(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
         </div>
-    );
-}
+        
+        <button
+          type="submit"
+          disabled={loading}
+          className={`w-full py-2 px-4 rounded-md text-white font-medium
+            ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        >
+          {loading ? 'Creating...' : 'Create Collection'}
+        </button>
+      </form>
 
-export default CreateCollection;
+      {error && (
+        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md">
+          {success}
+        </div>
+      )}
+    </div>
+  );
+}
