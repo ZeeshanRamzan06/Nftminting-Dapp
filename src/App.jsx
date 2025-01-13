@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import CreateCollection from './components/CreateCollection';
-import MintNFT from './components/MintNFT';
-import ViewCollection from './components/ViewCollection';
-import ViewNFT from './components/viewNft';
+import ViewCollection from './components/ViewCollection.jsx';
+import ViewNFT from './components/ViewNft.jsx';
 import Web3 from 'web3';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from './contracts/contractABI.js';
+import MintNFT from './components/mintNft.jsx';
+
 
 export default function App() {
   const [currentView, setCurrentView] = useState('create');
@@ -88,7 +89,7 @@ export default function App() {
     if (!walletConnected) {
       return (
         <div className="text-center">
-          <button
+          <button 
             onClick={connectWallet}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -109,7 +110,7 @@ export default function App() {
       case 'create':
         return <CreateCollection {...props} />;
       case 'mint':
-        return <MintNFT {...props} />;
+        return <MintNFT  {...props} />;
       case 'viewCollections':
         return <ViewCollection {...props} />;
       case 'viewNFTs':
