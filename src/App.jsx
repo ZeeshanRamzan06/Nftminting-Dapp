@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import CreateCollection from './components/CreateCollection';
-import ViewCollection from './components/ViewCollection.jsx';
-import ViewNFT from './components/ViewNft.jsx';
 import Web3 from 'web3';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from './contracts/contractABI.js';
 import MintNFT from './components/mintNft.jsx';
+import ViewCollection from './components/viewCollection.jsx';
+import CreateCollection from './components/CreateCollection.jsx';
+import ViewNFT from './components/viewNft.jsx';
 
 
 export default function App() {
