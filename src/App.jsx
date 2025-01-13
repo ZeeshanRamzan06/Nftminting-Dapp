@@ -6,13 +6,23 @@ import ViewCollection from './components/viewCollection.jsx';
 import CreateCollection from './components/CreateCollection.jsx';
 import ViewNFT from './components/viewNft.jsx';
 
-
 export default function App() {
   const [currentView, setCurrentView] = useState('create');
   const [walletConnected, setWalletConnected] = useState(false);
   const [account, setAccount] = useState('');
   const [web3, setWeb3] = useState(null);
   const [contract, setContract] = useState(null);
+
+  // Check if user is on mobile device
+  const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  // Get MetaMask deep link URL
+  const getMetaMaskDeepLink = () => {
+    const currentUrl = window.location.href;
+    return `https://metamask.app.link/dapp/${currentUrl.replace(/^https?:\/\//, '')}`;
+  };
 
   useEffect(() => {
     checkWalletConnection();
@@ -52,7 +62,7 @@ export default function App() {
             CONTRACT_ABI,
             CONTRACT_ADDRESS
           );
-          setContract(contract);
+          setContract(contractInstance);
         }
       }
     } catch (error) {
@@ -60,28 +70,51 @@ export default function App() {
     }
   };
 
+  const handleDesktopConnection = async () => {
+    try {
+      const web3Instance = new Web3(window.ethereum);
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
+      
+      setWeb3(web3Instance);
+      setAccount(accounts[0]);
+      setWalletConnected(true);
+      
+      const contractInstance = new web3Instance.eth.Contract(
+        CONTRACT_ABI,
+        CONTRACT_ADDRESS
+      );
+      setContract(contractInstance);
+    } catch (error) {
+      console.error('Error in desktop connection:', error);
+      throw error;
+    }
+  };
+
   const connectWallet = async () => {
     try {
-      if (window.ethereum) {
-        const web3Instance = new Web3(window.ethereum);
-        const accounts = await window.ethereum.request({
-          method: 'eth_requestAccounts'
-        });
-        
-        setWeb3(web3Instance);
-        setAccount(accounts[0]);
-        setWalletConnected(true);
-        
-        const contractInstance = new web3Instance.eth.Contract(
-          CONTRACT_ABI,
-          CONTRACT_ADDRESS
-        );
-        setContract(contractInstance);
+      if (isMobile()) {
+        // Mobile device handling
+        if (window.ethereum) {
+          // MetaMask is installed on mobile
+          await handleDesktopConnection();
+        } else {
+          // Redirect to MetaMask mobile app
+          window.location.href = getMetaMaskDeepLink();
+          return;
+        }
       } else {
-        alert('Please install MetaMask!');
+        // Desktop handling
+        if (window.ethereum) {
+          await handleDesktopConnection();
+        } else {
+          alert('Please install MetaMask!');
+        }
       }
     } catch (error) {
       console.error('Error connecting wallet:', error);
+      alert('Failed to connect wallet. Please try again.');
     }
   };
 
@@ -140,7 +173,7 @@ export default function App() {
       {walletConnected && (
         <nav className="bg-white shadow-sm mt-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-4 py-3">
+            <div className="flex space-x-4 py-3 overflow-x-auto">
               <button
                 onClick={() => setCurrentView('create')}
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
